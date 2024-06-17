@@ -1,0 +1,104 @@
+{
+    "app": {
+        "version": "1.0.8",
+		"NamePlace": "Casa Grande",
+        "pwd":"bytheg2024"
+        
+    },
+    "api":{
+        "usr":"66671fc84687bcaaf40001d0",
+        "url": "http://192.168.1.184:5500/",
+		"url_": "http://100.24.58.74/",
+        "api_valid_code":"api/codes/activeCode/",
+        "api_codes_events" : "api/codeEvent/new",
+        "api_alerts" : "api/alerts/"
+    },
+    "sim":{
+		"value":"+526641942241",
+		"apn": "internet.itelcel.com",
+		"APN_USER" : "webgpr",
+		"APN_PWD" : "webgprs2002",
+		"serial_port" : "/dev/ttyAMA0",
+		"serial_baud" : 115200,
+		"serial_timeout" : 0.1,
+		"HTTPACTION_waitTime" : 6,
+		"battery_status_line" : 2,
+		"api_get_line" : 5,
+		"send_code_events" : true,
+		"incoming_calls": false
+
+	},
+    "screen" : {
+        "rs":26,
+        "en":19,
+        "d4":13,
+        "d5":6,
+        "d6":5,
+        "d7":11,
+        "cols":16,
+        "lines" : 2,
+        "backlight":1,
+		"diplay_type":"lcd 16x2",
+		"image64" : "./assets/bytheg_128x128.png",
+		"image32" : "./assets/Bytheg128.png",
+		"header_icon_font_" : "fontawesome-webfont.ttf",
+		"header_icon_font" : "fontawesome-pro-solid-900.ttf",
+		"header_icon_color" : "cyan",
+		"header_icon_size" : 12,
+		"menu_text_color" : "white",
+		"menu_text_font" : "DejaVuSans.ttf",
+		"menu_text_font_size" : 11,
+		"code_text_color" : "black",
+		"code_text_font" : "DejaVuSansMono-Bold.ttf",
+		"code_text_font_size" : 12,
+		"code_hide_text_color" : "white",
+		"code_hide_text_font" : "DejaVuSans.ttf",
+		"code_hide_text_font_size" : 12,
+		"code_hide_mark" : "&",
+		"codesAvailable_icon_color" : "yellow",
+		"wifi_icon" : 61931,
+		"signal_icon" : 61458,
+		"chip_icon" : 62171,
+		"picture_icon" : 61502,
+		"key_icon" : 61572,
+		"lock_icon" : 61475,
+		"power_icon" : 61926,
+		"phone_speaker_icon" : 62112,
+		"warning_text_color" : "yellow"
+		},
+	"keypad_matrix" : { "flex" : [
+			 	["1","2","3","A"],
+			 	["4","5","6","B"],
+			 	["7","8","9","C"],
+			 	["*","0","#","D"]
+			  ],"hardPlastic" : [
+				["1", "4", "7", "*"], 
+				["2", "5", "8", "0"], 
+				["3", "6", "9", "#"], 
+				["A", "B", "C", "D"]
+			  ],"default":"flex"
+			},
+	"pi_pins" : {
+		"gsm_TX" : 0,
+		"gsm_RX" : 1,
+		"gpio_ir" : 4,
+		"gpio_magnet" : 18,
+		"gpio_magnet_delay": 5,
+		"gpio_gate_door": 19,
+		"gpio_gate_delay": 4,
+		"gpio_motion": 17,
+		"gpio_oled_sda1" : 2,
+		"gpio_oled_scl1" : 3,
+		"gpio_oled_sda2" : 20,
+		"gpio_oled_scl2" : 21,
+		"gpio_servo_magnet" : 20,
+		"gpio_servo_gate" : 22,
+		"gpio_servo_magnet_angle" : 90,
+		"gpio_servo_gate_angle" : 90,
+		"gpio_servo_magnet_delay" : 5,
+		"gpio_servo_gate_delay" : 5,
+		"keypad_rows" : [15,14,13,12],
+		"keypad_cols" : [11,10,9,8],
+		"buzzer" : 21
+	}
+}
