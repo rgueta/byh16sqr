@@ -56,6 +56,23 @@ GPIO.output(buzzer_pin, True)
 buzzer = GPIO.PWM(buzzer_pin, 10)
 buzzer.start(0)
 
+# region ------------- Key pad gpio setup  ----------------------------
+KEY_UP = 0 
+KEY_DOWN = 1
+
+MATRIX = config['keypad_matrix'][config['keypad_matrix']['default']]
+ROWS = config['pi_pins']['keypad_rows']
+COLS = config['pi_pins']['keypad_cols']
+
+for pin in ROWS:
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, GPIO.HIGH)
+
+for pin in COLS:
+    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+# endregion -----------------------------------------
+
 #endregion
 
 #region display ----------------------------
@@ -93,6 +110,10 @@ draw.rectangle((0,0,width,height), outline=0, fill=0)
 def initial():
     showVersion('ver. ' + version_app)
 
+def InitKeypad():
+    for row in ROWS:
+        GPIO.output(row, GPIO.LOW)
+
 def clear():
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     disp.image(image)
@@ -125,7 +146,6 @@ def showVersion(msg):
     disp.image(image)
     disp.display()
     sleep(3)
-
 
 def showMsg(msg1,msg2=None):
     draw.rectangle((0,0,width,height), outline=0, fill=0)
@@ -254,15 +274,38 @@ def monitor():
         if screen_saver == 60:
             screenSaver()
 
+
+def PollKeypad(cols,rows):
+    global screen_saver
+    for r in ROWS:
+        GPIO.output(r, GPIO.LOW)
+        result = [GPIO.input(cols[0]),GPIO.input(cols[1]),GPIO.input(cols[2]),GPIO.input(cols[3])]
+        if min(result) == 0:
+            key = MATRIX[int(rows.index(r))][int(result.index(0))]
+            GPIO.output(r, GPIO.HIGH) #manages key keept pressed
+            return(key)
+        GPIO.output(r, GPIO.HIGH)
+    
 try:
     initial()
+    InitKeypad()
     clear()
     showMsg(namePlace)
-    th = threading.Thread(target=monitor)
-    th.start()
+    thM = threading.Thread(target=monitor)
+    thM.start()
+
+    # thK = threading.Thread(target=PollKeypad)
+    # thK.start()
 
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
+
+        #manage keypad
+        key = PollKeypad(COLS,ROWS)
+        if key != None:
+            print('key pressed: '+key)
+            sleep(0.3)
+
         # Leer un frame de la cámara
         ret, frame = cap.read()
         if not ret:
@@ -277,7 +320,9 @@ try:
 
 except KeyboardInterrupt:
     print('\nAdios.!')
+    GPIO.cleanup()
     clear()
+    
 
 except OSError:  # Open failed
     print('Error--> ', OSError)
@@ -290,5 +335,5 @@ finally:
     # Liberar la cámara y cerrar todas las ventanas
     cap.release()
     cv2.destroyAllWindows()
-
+    sys.exit()
 

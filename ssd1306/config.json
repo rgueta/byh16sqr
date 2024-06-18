@@ -90,8 +90,8 @@
 		"gpio_servo_gate_angle" : 90,
 		"gpio_servo_magnet_delay" : 5,
 		"gpio_servo_gate_delay" : 5,
-		"keypad_rows" : [15,14,13,12],
-		"keypad_cols" : [11,10,9,8],
-		"buzzer" : 21
+		"keypad_rows" : [21,20,16,12],
+		"keypad_cols" : [7,8,25,24],
+		"buzzer" : 22
 	}
 }
