@@ -31,6 +31,12 @@ conf = open(str(pathlib.Path().resolve()) + '/config.json')
 config = json.loads(conf.read())
 conf.close()
 
+code = ''
+code_hide = ''
+code_hide_mark = config['screen']['code_hide_mark']
+show_code = config['app']['show_code']
+debugging = config['app']['debugging']
+
 screen_saver = 0
 version_app = config['app']['version']
 #api ------
@@ -110,10 +116,6 @@ draw.rectangle((0,0,width,height), outline=0, fill=0)
 def initial():
     showVersion('ver. ' + version_app)
 
-def InitKeypad():
-    for row in ROWS:
-        GPIO.output(row, GPIO.LOW)
-
 def clear():
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     disp.image(image)
@@ -167,7 +169,7 @@ def showMsg(msg1,msg2=None):
 
 def restart():
     clear()
-    showMsg('Restarting..')
+    showMsg('Reiniciando..')
     cap.release()
     cv2.destroyAllWindows()
     os.execl(sys.executable, sys.executable, *sys.argv)
@@ -235,6 +237,7 @@ def activeCode(code):
             sleep(7)
             showMsg(namePlace)
             return False
+        code = ''
     except requests.exceptions.RequestException as e:
         logger.error(e)
         return False
@@ -264,6 +267,14 @@ def screenSaver():
     sleep(4)
     clear()
 
+def printHeader():
+    clear()
+    draw.text((1,0), "* <-", font=font, fill=255)
+    draw.text((75,0), '# enter', font=font, fill=255)
+    disp.image(image)
+    disp.display()
+
+
 def monitor():
     global screen_saver
     while True:
@@ -274,37 +285,66 @@ def monitor():
         if screen_saver == 60:
             screenSaver()
 
-
-def PollKeypad(cols,rows):
+def PollKeypad():
+    global ROWS
+    global COLS
     global screen_saver
-    for r in ROWS:
-        GPIO.output(r, GPIO.LOW)
-        result = [GPIO.input(cols[0]),GPIO.input(cols[1]),GPIO.input(cols[2]),GPIO.input(cols[3])]
-        if min(result) == 0:
-            key = MATRIX[int(rows.index(r))][int(result.index(0))]
-            GPIO.output(r, GPIO.HIGH) #manages key keept pressed
-            return(key)
-        GPIO.output(r, GPIO.HIGH)
+    global code
+    global code_hide
+    global code_hide_mark
+    while True:
+        for r in ROWS:
+            GPIO.output(r, GPIO.LOW)
+            result = [GPIO.input(COLS[0]),GPIO.input(COLS[1]),GPIO.input(COLS[2]),GPIO.input(COLS[3])]
+            if min(result) == 0:
+                key = MATRIX[int(ROWS.index(r))][int(result.index(0))]
+                GPIO.output(r, GPIO.HIGH) #manages key keept pressed
+                if key != None:
+                    screen_saver = 0
+                    if key == '#':
+                        activeCode(code)
+                        code = code_hide = ''
+                        break
+                    elif key == '*':
+                        if len(code) > 0:
+                            code = code[0:-1]
+                            code_hide = code_hide[0:-1]
+                    else:
+                        code = code + key
+                        code_hide = code_hide + code_hide_mark
+                
+                        draw.rectangle((0,0,width,height), outline=0, fill=0)
+                        draw.text((1,0), "* <-", font=font, fill=255)
+                        draw.text((75,0), '# enter', font=font, fill=255)
+                        if show_code:
+                            draw.text((1, 22), "Codigo: " + code, font=font, fill=255)
+                        else:
+                            draw.text((1, 22), "Codigo: " + code_hide, font=font, fill=255)
+                        
+                        disp.image(image)
+                        disp.display()
+
+                        if debugging:
+                            print("Codigo: " + code)
+                    
+                    sleep(0.3)
+            GPIO.output(r, GPIO.HIGH)
     
 try:
     initial()
-    InitKeypad()
     clear()
     showMsg(namePlace)
+
+    # Monitor for screen saver
     thM = threading.Thread(target=monitor)
     thM.start()
 
-    # thK = threading.Thread(target=PollKeypad)
-    # thK.start()
+    # catch keypas pressed
+    thK = threading.Thread(target=PollKeypad)
+    thK.start()
 
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
-
-        #manage keypad
-        key = PollKeypad(COLS,ROWS)
-        if key != None:
-            print('key pressed: '+key)
-            sleep(0.3)
 
         # Leer un frame de la cámara
         ret, frame = cap.read()
