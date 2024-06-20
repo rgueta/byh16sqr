@@ -4,7 +4,10 @@
 		"NamePlace": "Casa Grande",
         "pwd":"bytheg2024",
 		"debugging": true,
-		"show_code": true
+		"show_code": true,
+		"pwdRST": "123456",
+		"settingsCode" : "1324",
+		"timezone": "US/Pacific"
         
     },
     "api":{

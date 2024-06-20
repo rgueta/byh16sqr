@@ -6,6 +6,7 @@ import json
 import pathlib
 import logging
 from datetime import datetime
+import pytz # type: ignore
 import os
 import sys
 import threading
@@ -33,9 +34,15 @@ conf.close()
 
 code = ''
 code_hide = ''
+settingsMode = False
+settingsCode = ''
+readyToConfig = False
 code_hide_mark = config['screen']['code_hide_mark']
 show_code = config['app']['show_code']
 debugging = config['app']['debugging']
+pwdRST = config['app']['pwdRST']
+_settingsCode = config['app']['settingsCode']
+tzone = config['app']['timezone']
 
 screen_saver = 0
 version_app = config['app']['version']
@@ -53,14 +60,12 @@ acc = 0
 acc_code = 0
 first_code = ''
 last_capture = datetime.now()
+settingsCode = ''
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(buzzer_pin,GPIO.OUT)
-GPIO.output(buzzer_pin, True)
-
-buzzer = GPIO.PWM(buzzer_pin, 10)
-buzzer.start(0)
+buzzer = GPIO.PWM(buzzer_pin, 1000)
 
 # region ------------- Key pad gpio setup  ----------------------------
 KEY_UP = 0 
@@ -174,6 +179,57 @@ def restart():
     cv2.destroyAllWindows()
     os.execl(sys.executable, sys.executable, *sys.argv)
 
+# region -------- Configuration  -------------------------------------
+
+def changeSetting(value):
+    global MATRIX
+    global sendStatus
+    applied = False
+
+    # keypad  -----------------------------------
+    if value == '00': # reboot
+        printHeaderSettings()
+        draw.text((1, 18), "Booting.. ", font=font, fill=255)
+        disp.image(image)
+        disp.display()
+        sleep(3)
+        restart()
+        applied = True
+
+    elif value == '01': # get Sim Info
+        # getSimInfo()
+        applied = True
+
+    elif value == '02': # get timestamp
+        # updTimestamp()
+        applied = True
+
+    elif value == '03': # get phone number
+        sendStatus = True
+        # getPhoneNum()
+        applied = True
+
+    elif value == '1': # set matrix for flex keypad
+        MATRIX = config['keypad_matrix']['flex']
+        applied = True
+
+    elif value == '2': # set matrix for hard plastic keypad
+        MATRIX = config['keypad_matrix']['hardPlastic']
+        applied = True
+
+    # debug -----------------------------------
+    elif value == '10':  #debug true
+        # jsonTools.updJson('u','config.json','app', 'debugging', True)
+        applied = True
+
+    elif value == '11': #debug false
+        # jsonTools.updJson('u','config.json','app', 'debugging', False)
+        applied = True
+
+    return applied
+    
+# endregion
+
 def decode_qr(frame):
     #acc increment calling value
     global acc
@@ -205,18 +261,18 @@ def decode_qr(frame):
             acc += 1
 
         # Imprimir el texto del QR y el tipo en la consola
-            if diff_time > 13:
+            if diff_time > 15:
                 GPIO.output(buzzer_pin,GPIO.HIGH)
                 sleep(0.5)
                 GPIO.output(buzzer_pin,GPIO.LOW)
 
                 if qr_data == password:
-                    restart();
+                    restart()
                     return
 
                 screen_saver = 0
-                print("{}.- Data: '{}' | Type: '{}' | Acc-code: '{}' | Diff: '{}' "
-                    .format(str(acc),qr_data, qr_type, acc_code, str(diff_time)))
+                print("{}.- Data: '{}' | Time: '{}' | Acc-code: '{}' | Diff: '{}' "
+                    .format(str(acc),f"{qr_data:^6}", datetime.now(pytz.timezone(tzone)), acc_code, str(diff_time)))
                 
                 activeCode(qr_data)
 
@@ -242,38 +298,29 @@ def activeCode(code):
         logger.error(e)
         return False
 
-def tone(pin, frequency, duration):
-    pin.start(100)
-    pin.ChangeDutyCycle(duration)  # volume
-    pin.ChangeFrequency(frequency)
-    sleep(2)
-    pin.stop()
-    # GPIO.cleanup()
-
-def song(name):
-    if name == 'initial':
-        tone(buzzer, 1440, 30)
-        tone(buzzer, 1150, 30)
-        tone(buzzer, 1440, 30)
-    elif name == 'fail':
-        tone(buzzer, 100, 50)
-    elif name == 'ok':
-        tone(buzzer, 1100, 20)
-        tone(buzzer, 1500, 20)
-
 def screenSaver():
+    global settingsMode
+    global readyToConfig
+    global settingsCode
+
+    settingsCode = ''
+    readyToConfig = False
+    settingsMode = False
     clear()
-    showMsg('Screen saver')
-    sleep(4)
-    clear()
+
 
 def printHeader():
-    clear()
+    draw.rectangle((0,0,width,height), outline=0, fill=0)
     draw.text((1,0), "* <-", font=font, fill=255)
     draw.text((75,0), '# enter', font=font, fill=255)
     disp.image(image)
     disp.display()
 
+def printHeaderSettings():
+    draw.rectangle((0,0,width,height), outline=0, fill=0)
+    draw.text((1,0), "* <-", font=font, fill=255)
+    draw.text((75,0), '# enter', font=font, fill=255)
+    draw.text((1,9), 'config', font=font, fill=255)
 
 def monitor():
     global screen_saver
@@ -292,6 +339,9 @@ def PollKeypad():
     global code
     global code_hide
     global code_hide_mark
+    global settingsMode
+    global readyToConfig
+    global settingsCode
     while True:
         for r in ROWS:
             GPIO.output(r, GPIO.LOW)
@@ -302,9 +352,182 @@ def PollKeypad():
                 if key != None:
                     screen_saver = 0
                     if key == '#':
-                        activeCode(code)
-                        code = code_hide = ''
-                        break
+
+                        # region code settings verification  --------------
+                        if len(code) == 0 and settingsMode == True and readyToConfig == False:
+                            printHeaderSettings()
+                            code = code + key
+                            code_hide = code_hide + code_hide_mark
+                            draw.text((1, 18), "Pwd:  " + code_hide, font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            break
+                        elif len(code) == 0 and settingsMode == True and readyToConfig == True:
+                            printHeaderSettings()
+                            code = code + key
+                            code_hide = code_hide + code_hide_mark
+                            draw.text((1, 18), "Code:  " + code, font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            break
+                        elif len(code) == 0 and settingsMode == False:
+                            code = code + key
+                            code_hide = code_hide + code_hide_mark
+                            draw.text((1, 18), "Code:  " + code, font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            break
+                        elif code[0:1] == '#' and settingsMode == False:
+                            if code[1:] == _settingsCode:
+                                settingsMode = True
+                                song('ok')
+                                printHeaderSettings()
+                                cmdLineTitle = "Pwd:                  "
+                                draw.text((1, 18), cmdLineTitle, font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                settingsCode = ''
+                                code = code_hide = ''
+                                break
+                        elif code[0:1] == '#' and settingsMode == True and readyToConfig == False:
+                            if code[1:] == pwdRST :
+                                readyToConfig = True
+                                printHeaderSettings()
+                                draw.text((1, 18), "Pwd: OK         ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                song('ok')
+                                sleep(3)
+                                printHeaderSettings()
+                                draw.text((1, 18), "Code:           ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                if debugging:
+                                    # DisplayMsg('pwd ok',5)
+                                    print('pwd ok')
+                                code = code_hide = ''
+                                settingsCode = ''
+                                break
+                            else:
+                                printHeaderSettings()
+                                draw.text((1, 18), "Pwd: Error         ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                song('fail')
+                                sleep(3)
+                                printHeaderSettings()
+                                draw.text((1, 18), "Pwd:         ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                if debugging:
+                                    # disable because not working ok
+                                    # DisplayMsg('pwd error', 5)
+                                    print('pwd error')
+                                code = code_hide = ''
+                                break
+                        elif code[0:1] != '#' and settingsMode == True and readyToConfig == True:
+                            if changeSetting(code):
+                                draw.text((1, 10), "Applying", font=font, fill=255)
+                                draw.text((3, 18), "code", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                sleep(4)
+                                song('ok')
+                                printHeaderSettings()
+                                draw.text((3, 18), "Code: ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                code = code_hide = ''
+                            else:
+                                draw.rectangle((0,0,width,height), outline=0, fill=0)
+                                draw.text((1, 10), "Not Applied", font=font, fill=255)
+                                draw.text((3, 18), "code ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                sleep(4)
+                                song('fail')
+                                printHeaderSettings()
+                                draw.text((3, 18), "Code: ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                code = code_hide = ''
+
+                            break
+                        elif code[0:1] == '#' and code[1:] == _settingsCode and settingsMode == True and readyToConfig == True:
+                            printHeaderSettings()
+                            draw.text((3, 18), "exit settings", font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            song('ok')
+                            sleep(3)
+                            printHeader()
+                            draw.text((3, 18), "Codigo:           ", font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            code = code_hide = ''
+                            settingsCode = ''
+                            readyToConfig = False
+                            settingsMode = False
+                            break
+                        elif len(code) > 0 and settingsMode == True and readyToConfig == False:
+                            if code == pwdRST:
+                                readyToConfig = True
+                                printHeaderSettings()
+                                draw.text((3, 18), "Pwd: OK         ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                song('ok')
+                                sleep(3)
+                                printHeaderSettings()
+                                draw.text((3, 18), "Code:           ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                if debugging:
+                                    # disable because not working ok
+                                    # DisplayMsg('pwd ok', 5)
+                                    print('pwd ok')
+                                code = code_hide = ''
+                                settingsCode = ''
+                                break
+                            else:
+                                printHeaderSettings()
+                                draw.text((3, 18), "Pwd: Error         ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                song('fail')
+                                sleep(3)
+                                printHeaderSettings()
+                                draw.text((3, 18), "Pwd:         ", font=font, fill=255)
+                                disp.image(image)
+                                disp.display()
+                                if debugging:
+                                    # disable because not working ok
+                                    # DisplayMsg('pwd error',4)
+                                    print('pwd error')
+                                code = code_hide = ''
+                                break
+                        # endregion -------------------------------------
+                        
+                        # incomplete code ---------------------
+                        elif len(code) < 6 and code[0:1] != '#':
+                            printHeader()
+                            draw.text((3, 18), "Codigo incompleto    ", font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            song('fail')
+                            sleep(3)
+                            printHeader()
+                            draw.text((3, 18), "Codigo: {}             ".format(code), font=font, fill=255)
+                            disp.image(image)
+                            disp.display()
+                            if debugging:
+                                print('incomplete code')
+                            break
+                        # Just verify code ---------------------
+                        elif len(code) > 5 and code[0:1] != '#':
+                            activeCode(code)
+                            code = code_hide = ''
+                            break
                     elif key == '*':
                         if len(code) > 0:
                             code = code[0:-1]
@@ -313,19 +536,19 @@ def PollKeypad():
                         code = code + key
                         code_hide = code_hide + code_hide_mark
                 
-                        draw.rectangle((0,0,width,height), outline=0, fill=0)
-                        draw.text((1,0), "* <-", font=font, fill=255)
-                        draw.text((75,0), '# enter', font=font, fill=255)
-                        if show_code:
-                            draw.text((1, 22), "Codigo: " + code, font=font, fill=255)
-                        else:
-                            draw.text((1, 22), "Codigo: " + code_hide, font=font, fill=255)
-                        
-                        disp.image(image)
-                        disp.display()
+                    draw.rectangle((0,0,width,height), outline=0, fill=0)
+                    draw.text((1,0), "* <-", font=font, fill=255)
+                    draw.text((75,0), '# enter', font=font, fill=255)
+                    if show_code:
+                        draw.text((1, 18), "Codigo:  " + code, font=font, fill=255)
+                    else:
+                        draw.text((1, 18), "Codigo:  " + code_hide, font=font, fill=255)
+                    
+                    disp.image(image)
+                    disp.display()
 
-                        if debugging:
-                            print("Codigo: " + code)
+                    if debugging:
+                        print("Codigo: " + code)
                     
                     sleep(0.3)
             GPIO.output(r, GPIO.HIGH)

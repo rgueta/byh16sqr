@@ -4,7 +4,10 @@
 		"NamePlace": "Casa Grande",
         "pwd":"bytheg2024",
 		"debugging": true,
-		"show_code": true
+		"show_code": true,
+		"pwdRST": "123456",
+		"settingsCode" : "1324",
+		"timezone": "US/Pacific"
         
     },
     "api":{
@@ -101,6 +104,6 @@
 		"gpio_servo_gate_delay" : 5,
 		"keypad_rows" : [15,14,13,12],
 		"keypad_cols" : [11,10,9,8],
-		"buzzer" : 21
+		"buzzer" : 4
 	}
 }

@@ -61,7 +61,7 @@ last_capture = datetime.now()
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(buzzer_pin,GPIO.OUT)
-GPIO.output(buzzer_pin, True)
+# GPIO.output(buzzer_pin, True)
 
 buzzer = GPIO.PWM(buzzer_pin, 10)
 buzzer.start(0)
