@@ -25,9 +25,7 @@ logging.basicConfig(filename='history.log', level=logging.ERROR,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger=logging.getLogger(__name__)
 
-
 #region ---- variables section  -------------
-
 conf = open(str(pathlib.Path().resolve()) + '/config.json')
 config = json.loads(conf.read())
 conf.close()
@@ -308,7 +306,6 @@ def screenSaver():
     settingsMode = False
     clear()
 
-
 def printHeader():
     draw.rectangle((0,0,width,height), outline=0, fill=0)
     draw.text((1,0), "* <-", font=font, fill=255)
@@ -380,7 +377,6 @@ def PollKeypad():
                         elif code[0:1] == '#' and settingsMode == False:
                             if code[1:] == _settingsCode:
                                 settingsMode = True
-                                song('ok')
                                 printHeaderSettings()
                                 cmdLineTitle = "Pwd:                  "
                                 draw.text((1, 18), cmdLineTitle, font=font, fill=255)
@@ -396,7 +392,6 @@ def PollKeypad():
                                 draw.text((1, 18), "Pwd: OK         ", font=font, fill=255)
                                 disp.image(image)
                                 disp.display()
-                                song('ok')
                                 sleep(3)
                                 printHeaderSettings()
                                 draw.text((1, 18), "Code:           ", font=font, fill=255)
@@ -413,7 +408,6 @@ def PollKeypad():
                                 draw.text((1, 18), "Pwd: Error         ", font=font, fill=255)
                                 disp.image(image)
                                 disp.display()
-                                song('fail')
                                 sleep(3)
                                 printHeaderSettings()
                                 draw.text((1, 18), "Pwd:         ", font=font, fill=255)
@@ -432,7 +426,6 @@ def PollKeypad():
                                 disp.image(image)
                                 disp.display()
                                 sleep(4)
-                                song('ok')
                                 printHeaderSettings()
                                 draw.text((3, 18), "Code: ", font=font, fill=255)
                                 disp.image(image)
@@ -458,7 +451,6 @@ def PollKeypad():
                             draw.text((3, 18), "exit settings", font=font, fill=255)
                             disp.image(image)
                             disp.display()
-                            song('ok')
                             sleep(3)
                             printHeader()
                             draw.text((3, 18), "Codigo:           ", font=font, fill=255)
@@ -476,7 +468,6 @@ def PollKeypad():
                                 draw.text((3, 18), "Pwd: OK         ", font=font, fill=255)
                                 disp.image(image)
                                 disp.display()
-                                song('ok')
                                 sleep(3)
                                 printHeaderSettings()
                                 draw.text((3, 18), "Code:           ", font=font, fill=255)
@@ -585,13 +576,11 @@ except KeyboardInterrupt:
     print('\nAdios.!')
     GPIO.cleanup()
     clear()
-    
 
 except OSError:  # Open failed
     print('Error--> ', OSError)
     logger.error(OSError)
 except SystemExit as e:
-    import os
     logger.error(e)
     os._exit()
 finally:
