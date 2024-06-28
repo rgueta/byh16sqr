@@ -36,7 +36,7 @@
     "screen" : {
         "width":128,
 		"height":32,
-		"diplay_type":"oled.128x128",
+		"display_type":"lcd.16x2",
 		"image64" : "./assets/bytheg_128x128.png",
 		"image32" : "./assets/Bytheg128.png",
 		"header_icon_font_" : "fontawesome-webfont.ttf",

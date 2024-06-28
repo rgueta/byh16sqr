@@ -19,6 +19,7 @@ config = json.loads(conf.read())
 conf.close()
 
 #region display ----------------------------
+
 from Adafruit_CharLCD import Adafruit_CharLCD  # type: ignore
 
 cols = config['screen']['cols']
@@ -42,7 +43,6 @@ logging.basicConfig(filename='history.log', level=logging.ERROR,
 logger=logging.getLogger(__name__)
 
 #region ---- variables section  -------------
-
 
 code = ''
 code_hide = ''
@@ -102,7 +102,6 @@ def initial():
     showVersion('ver. ' + version_app)
 
 def showVersion(msg):
-    disp.clear()
     showMsg(msg + '.')
     sleep(0.9)
 
@@ -121,7 +120,6 @@ def showMsg(msg1,msg2=''):
     disp.message(msg)
 
 def restart():
-    disp.clear()
     showMsg('Reiniciando..')
     cap.release()
     cv2.destroyAllWindows()
@@ -177,7 +175,6 @@ def changeSetting(value):
     return applied
     
 # endregion
-
 
 def decode_qr(frame):
     #acc increment calling value
@@ -294,7 +291,6 @@ def PollKeypad():
                         # region code settings verification  --------------
                         if len(code) == 0 and settingsMode == True and readyToConfig == False:
                             print('if 1')
-                            
                             if show_code:
                                 showMsg("* <-   # enter","Cfg.Pwd:" + code)
                             else:
@@ -306,24 +302,9 @@ def PollKeypad():
                             code_hide = code_hide + code_hide_mark
                             showMsg("* <-   # enter","Code: " + code)
                             break
-                        elif len(code) == 0 and settingsMode == False:
-                            print('if 3')
-                            code = code + key
-                            code_hide = code_hide + code_hide_mark
-                            if show_code:
-                                showMsg("* <-   # enter","Cfg.Code:" + code)
-                            else:
-                                showMsg("* <-   # enter","Cfg.Code:" + code_hide)
-                            break
-                        elif code[0:1] == '#' and settingsMode == False:
-                            print('if 4')
-                            if code[1:] == _settingsCode:
-                                settingsMode = True
-                                showMsg("* <-   # enter","Cfg.Pwd:")
-                                code = code_hide = ''
-                            break
+
                         elif code[0:1] == '#' and settingsMode == True and readyToConfig == False:
-                            print('if 5')
+                            print('if 3')
                             if code[1:] == pwdRST :
                                 readyToConfig = True
                                 showMsg("* <-   # enter","Pwd: Ok")
@@ -343,7 +324,7 @@ def PollKeypad():
                                 code = code_hide = ''
                                 break
                         elif code[0:1] != '#' and settingsMode == True and readyToConfig == True:
-                            print('if 6')
+                            print('if 4')
                             if changeSetting(code):
                                 showMsg("Applying","code")
                                 sleep(4)
@@ -357,7 +338,7 @@ def PollKeypad():
 
                             break
                         elif code[0:1] == '#' and code[1:] == _settingsCode and settingsMode == True and readyToConfig == True:
-                            print('if 7')
+                            print('if 5')
                             showMsg("* <-   # enter","exit settings")
                             sleep(3)
                             showMsg("* <-   # enter","Codigo: ")
@@ -366,7 +347,7 @@ def PollKeypad():
                             settingsMode = False
                             break
                         elif len(code) > 0 and settingsMode == True and readyToConfig == False:
-                            print('if 8')
+                            print('if 6')
                             if code == pwdRST:
                                 readyToConfig = True
                                 showMsg("* <-   # enter","Pwd: OK")
@@ -386,6 +367,23 @@ def PollKeypad():
                                     print('pwd error')
                                 code = code_hide = ''
                                 break
+                        elif len(code) == 0 and settingsMode == False:
+                            print('if 7')
+                            code = code + key
+                            code_hide = code_hide + code_hide_mark
+                            if show_code:
+                                showMsg("* <-   # enter","Cfg.Code:" + code)
+                            else:
+                                showMsg("* <-   # enter","Cfg.Code:" + code_hide)
+                            break
+                        elif code[0:1] == '#' and settingsMode == False:
+                            print('if 8')
+                            if code[1:] == _settingsCode:
+                                settingsMode = True
+                                showMsg("* <-   # enter","Cfg.Pwd:")
+                                code = code_hide = ''
+                            break
+                        
                         # endregion -------------------------------------
                         
                         # incomplete code ---------------------
